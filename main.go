@@ -59,34 +59,64 @@ func main() {
 		Region: raxRegion,
 	})
 
-	/*	cdnClient, err := rackspace.NewObjectCDNV1(provider, gophercloud.EndpointOpts{
-		Region: raxRegion,
-	}) */
+	EachObject(serviceClient, raxContainer, fontFolder, handlerListHeaders)
+}
 
-	opts := &osObjects.ListOpts{Full: true, Path: fontFolder}
+type Object struct { // A RAX cloud object
+	Client    *gophercloud.ServiceClient
+	Container string // name of the object container
+	Name      string // name of the object including folders (eg. fonts/something.woff2)
+}
 
-	pager := osObjects.List(serviceClient, raxContainer, opts)
-	err = pager.EachPage(func(page pagination.Page) (bool, error) {
-		// Get a slice of strings, i.e. object names
+func handlerListHeaders(obj *Object) (bool, error) {
+	fmt.Println(obj.Name)
+	metadata := osObjects.Get(obj.Client, obj.Container, obj.Name, &osObjects.GetOpts{})
+
+	fmt.Println(metadata)
+
+	return true, nil
+}
+
+func handlerAddCORSHeaders(obj *Object) (bool, error) {
+	fmt.Println(obj.Name)
+
+	metadata := map[string]string{"Access-Control-Allow-Origin": "*"}
+	osObjects.Update(
+		obj.Client,
+		obj.Container,
+		obj.Name,
+		osObjects.UpdateOpts{Metadata: metadata},
+	)
+
+	return true, nil
+}
+
+func EachObject(c *gophercloud.ServiceClient, raxContainer string, folder string,
+	handler func(*Object) (bool, error)) error {
+	opts := &osObjects.ListOpts{Full: true, Path: folder}
+
+	pager := osObjects.List(c, raxContainer, opts)
+	err := pager.EachPage(func(page pagination.Page) (bool, error) {
 		objectNames, err := osObjects.ExtractNames(page)
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, n := range objectNames {
-			fmt.Println(n)
+		for _, objectName := range objectNames {
+			cont, err := handler(&Object{
+				Name:      objectName,
+				Container: raxContainer,
+				Client:    c,
+			})
+			if err != nil {
+				return false, err
+			}
+			if !cont {
+				return false, nil
+			}
 		}
 
 		return true, nil
 	})
 
-	/*
-		metadata := map[string]string{"some-key": "some-data"}
-		_, err := objects.Update(
-			serviceClient,
-			"{containerName}",
-			"{objectName}",
-			objects.UpdateOpts{Metadata: metadata},
-		).ExtractHeader()
-	*/
-
+	return err
 }
