@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/joho/godotenv"
 	"github.com/rackspace/gophercloud"
 	osObjects "github.com/rackspace/gophercloud/openstack/objectstorage/v1/objects"
@@ -82,8 +83,6 @@ func handlerListHeaders(obj *Object) (bool, error) {
 }
 
 func handlerAddCORSHeaders(obj *Object) (bool, error) {
-	fmt.Println(obj.Name)
-
 	metadata := map[string]string{"Access-Control-Allow-Origin": "*"}
 
 	url := obj.Client.ServiceURL(obj.Container, obj.Name)
@@ -95,11 +94,12 @@ func handlerAddCORSHeaders(obj *Object) (bool, error) {
 		MoreHeaders: metadata,
 		OkCodes:     []int{202},
 	})
-	if err != nil {
-		log.Fatal(err)
+	if err == nil {
+		defer resp.Body.Close()
+		color.Green(" ✓ %s", obj.Name)
+	} else {
+		color.Red(" ✘ %s: %s", obj.Name, err)
 	}
-
-	defer resp.Body.Close()
 
 	return true, nil
 }
