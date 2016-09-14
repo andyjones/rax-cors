@@ -59,7 +59,7 @@ func main() {
 		Region: raxRegion,
 	})
 
-	EachObject(serviceClient, raxContainer, fontFolder, handlerListHeaders)
+	EachObject(serviceClient, raxContainer, fontFolder, handlerAddCORSHeaders)
 }
 
 type Object struct { // A RAX cloud object
@@ -81,12 +81,21 @@ func handlerAddCORSHeaders(obj *Object) (bool, error) {
 	fmt.Println(obj.Name)
 
 	metadata := map[string]string{"Access-Control-Allow-Origin": "*"}
-	osObjects.Update(
-		obj.Client,
-		obj.Container,
-		obj.Name,
-		osObjects.UpdateOpts{Metadata: metadata},
-	)
+
+	url := obj.Client.ServiceURL(obj.Container, obj.Name)
+
+	// we need to add a header called "Access-Control-Allow-Origin"
+	// but osObjects.Update() will prepend it with "X-Meta-" ...
+	// so we implement our own hacky version
+	resp, err := obj.Client.Request("POST", url, gophercloud.RequestOpts{
+		MoreHeaders: metadata,
+		OkCodes:     []int{202},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
 
 	return true, nil
 }
