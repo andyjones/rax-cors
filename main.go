@@ -5,13 +5,9 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/rackspace/gophercloud"
+	osObjects "github.com/rackspace/gophercloud/openstack/objectstorage/v1/objects"
 	"github.com/rackspace/gophercloud/pagination"
 	"github.com/rackspace/gophercloud/rackspace"
-	//"github.com/rackspace/gophercloud/rackspace/objectstorage/v1/cdncontainers"
-	//"github.com/rackspace/gophercloud/rackspace/objectstorage/v1/cdnobjects"
-	osObjects "github.com/rackspace/gophercloud/openstack/objectstorage/v1/objects"
-	//	"github.com/rackspace/gophercloud/rackspace/objectstorage/v1/containers"
-	//"github.com/rackspace/gophercloud/rackspace/objectstorage/v1/objects"
 	"log"
 	"os"
 )
@@ -42,6 +38,9 @@ func main() {
 	var fontFolder string
 	flag.StringVar(&fontFolder, "fontfolder", "fonts", "folder that contains the fonts")
 
+	var updateCORS bool
+	flag.BoolVar(&updateCORS, "update", false, "Add the CORS headers to objects (default is to list the objects)")
+
 	flag.Parse()
 
 	if raxContainer == "" {
@@ -59,7 +58,12 @@ func main() {
 		Region: raxRegion,
 	})
 
-	EachObject(serviceClient, raxContainer, fontFolder, handlerAddCORSHeaders)
+	handler := handlerListHeaders
+	if updateCORS {
+		handler = handlerAddCORSHeaders
+	}
+
+	EachObject(serviceClient, raxContainer, fontFolder, handler)
 }
 
 type Object struct { // A RAX cloud object
