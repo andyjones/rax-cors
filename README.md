@@ -1,5 +1,5 @@
-cors-fonts
-==========
+rax-cors
+========
 
 Adds an `Access-Origin-Control` header to all objects
 in a folder in Rackspace cloud files.
@@ -7,13 +7,13 @@ in a folder in Rackspace cloud files.
 Synopsis
 --------
 
-List objects in a container:
+List objects in the `fonts` folder in the `ws-styles-dev` container:
 
-    ./cors-fonts -container ws-styles-dev
+    ./rax-cors -container ws-styles-dev
 
-Add an 'Access-Origin-Control' header to all objects:
+Add an `Access-Origin-Control` header to all objects:
 
-    ./cors-fonts -container ws-styles-dev -update
+    ./rax-cors -container ws-styles-dev -update
 
 Description
 -----------
